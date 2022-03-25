@@ -77,7 +77,7 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
     
 
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
-                   svd='numpy_svd', random_state=None, verbose=False, mask=None):
+                   svd='numpy_svd', random_state=None, verbose=False, mask=None, fast="legacy"):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -148,7 +148,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
             factors.append(eigenvecs)
 
         # The initial core approximation is needed here for the masking step
-        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True, fast=fast)
     elif init == 'random':
         rng = tl.check_random_state(random_state)
         # len(rank) == len(modes) but we still want a core dimension for the modes not optimized
@@ -165,14 +165,14 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     for iteration in range(n_iter_max):
         if mask is not None:
-            tensor = tensor*mask + multi_mode_dot(core, factors, modes=modes, transpose=False)*(1-mask)
+            tensor = tensor*mask + multi_mode_dot(core, factors, modes=modes, transpose=False, fast=fast)*(1-mask)
 
         for index, mode in enumerate(modes):
-            core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
+            core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True, fast=fast)
             eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors[index] = eigenvecs
 
-        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True, fast=fast)
 
         # The factors are orthonormal and therefore do not affect the reconstructed tensor's norm
         rec_error = sqrt(abs(norm_tensor**2 - tl.norm(core, 2)**2)) / norm_tensor
@@ -192,7 +192,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
 
 def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
-           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
+           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False, fast="legacy"):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -246,18 +246,18 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         
         fixed_factors = sorted(fixed_factors)
         modes_fixed, factors_fixed = zip(*[(i, f) for (i, f) in enumerate(factors) if i in fixed_factors])
-        core = multi_mode_dot(core, factors_fixed, modes=modes_fixed)
+        core = multi_mode_dot(core, factors_fixed, modes=modes_fixed, fast=fast)
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
         core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                                            svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                           verbose=verbose)
+                                           verbose=verbose, fast=fast)
 
         factors = list(new_factors)
         for i, e in enumerate(fixed_factors):
             factors.insert(e, factors_fixed[i])
-        core = multi_mode_dot(core, factors_fixed, modes=modes_fixed, transpose=True)
+        core = multi_mode_dot(core, factors_fixed, modes=modes_fixed, transpose=True, fast=fast)
 
         return TuckerTensor((core, factors))
 
@@ -268,7 +268,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
 
         core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                                        svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                       verbose=verbose)
+                                       verbose=verbose, fast=fast)
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,

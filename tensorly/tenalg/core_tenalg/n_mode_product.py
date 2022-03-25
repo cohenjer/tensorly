@@ -80,34 +80,34 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
             else: # tensor times vec: refold the unfolding
                 return fold(res, fold_mode, new_shape)
 
-
-        if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
-            # Test for the validity of the operation
-            dim = 0 if transpose else 1
-            if matrix_or_vector.shape[dim] != tensor.shape[mode]:
-                raise ValueError(
-                    'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
-                        tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
-                    ))
-            
-            if transpose:
-                # we should support conjugaison without transposition, to avoid moving the data around here.
-                matrix_or_vector = T.conj(matrix_or_vector)
-
-
-        elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
-            dim = 0
-            if matrix_or_vector.shape[0] != tensor.shape[mode]:
-                raise ValueError(
-                    'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
-                        tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
-                    ))
-
         else:
-            raise ValueError('Can only take n_mode_product with a vector or a matrix.'
-                             'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
-        
-        return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
+            if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
+                # Test for the validity of the operation
+                dim = 0 if transpose else 1
+                if matrix_or_vector.shape[dim] != tensor.shape[mode]:
+                    raise ValueError(
+                        'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
+                            tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
+                        ))
+                
+                if transpose:
+                    # we should support conjugaison without transposition, to avoid moving the data around here.
+                    matrix_or_vector = T.conj(matrix_or_vector)
+
+
+            elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
+                dim = 0
+                if matrix_or_vector.shape[0] != tensor.shape[mode]:
+                    raise ValueError(
+                        'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
+                            tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
+                        ))
+
+            else:
+                raise ValueError('Can only take n_mode_product with a vector or a matrix.'
+                                'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
+            
+            return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
 
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False, order_opt=False):
@@ -171,7 +171,6 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
         factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[2], reverse=False)
     else:
         factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[1])
-    print(factors_modes)
 
     # we now need to handle ndim reduction after each contraction
     for i, (matrix_or_vec, mode, _) in enumerate(factors_modes):

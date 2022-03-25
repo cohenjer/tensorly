@@ -54,14 +54,14 @@ class NumpyBackend(Backend, backend_name='numpy'):
             return np.tensordot(a,b,axes=axes)
         elif b.ndim ==2 and len(axes[0])==1:
             # TTM
-            # not tested !!
             # check if axes is provided
             mode = axes[0][0]
             out = np.tensordot(a,b,axes=axes)
             # tensordot return the free mode on the last mode; we want it to be in place of the contracted one
             order = [i for i in range(out.ndim)]
-            order[mode] = out.ndim -1
-            order[-1] = mode
+            order[mode] = out.ndim - 1
+            for i in range(mode+1,out.ndim):
+                order[i]-=1
             return np.transpose(out, order)
         else:
             return np.tensordot(a,b,axes)
