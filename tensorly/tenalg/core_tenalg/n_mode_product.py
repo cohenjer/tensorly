@@ -1,7 +1,7 @@
 from ... import backend as T
 from ... import unfold, fold, vec_to_tensor
 
-def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
+def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
         """n-mode product of a tensor and a matrix or vector at the specified mode
 
         Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
@@ -18,6 +18,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         transpose : bool, default is False
             If True, the matrix is transposed. 
             For complex tensors, the conjugate transpose is used. 
+        fast : bool or "old"
+            Controls if we are running optimized ttv or not. for testing only
+            "legacy" computes the regular nmode product from tensorly
 
         Returns
         -------
@@ -30,9 +33,53 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         --------
         multi_mode_dot : chaining several mode_dot in one call
         """
-        # the mode along which to fold might decrease if we take product with a vector
-        fold_mode = mode
-        new_shape = list(tensor.shape)
+
+        if fast=="legacy":
+            # the mode along which to fold might decrease if we take product with a vector
+            fold_mode = mode
+            new_shape = list(tensor.shape)
+            if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
+                # Test for the validity of the operation
+                dim = 0 if transpose else 1
+                if matrix_or_vector.shape[dim] != tensor.shape[mode]:
+                    raise ValueError(
+                        'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
+                            tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
+                        ))
+                
+                if transpose:
+                    matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
+
+                new_shape[mode] = matrix_or_vector.shape[0]
+                vec = False
+
+            elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
+                dim = 0
+                if matrix_or_vector.shape[0] != tensor.shape[mode]:
+                    raise ValueError(
+                        'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
+                            tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
+                        ))
+                if len(new_shape) > 1:
+                    new_shape.pop(mode)
+                else:
+                    # Ideally this should be (), i.e. order-0 tensors
+                    # MXNet currently doesn't support this though..
+                    new_shape = []
+                vec = True
+
+
+            else:
+                raise ValueError('Can only take n_mode_product with a vector or a matrix.'
+                                'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
+            
+            res = T.dot(matrix_or_vector, unfold(tensor, mode))
+
+            if vec: # We contracted with a vector, leading to a vector
+                return vec_to_tensor(res, shape=new_shape)
+            else: # tensor times vec: refold the unfolding
+                return fold(res, fold_mode, new_shape)
+
 
         if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
             # Test for the validity of the operation
@@ -44,38 +91,26 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                     ))
             
             if transpose:
-                matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
+                # we should support conjugaison without transposition, to avoid moving the data around here.
+                matrix_or_vector = T.conj(matrix_or_vector)
 
-            new_shape[mode] = matrix_or_vector.shape[0]
-            vec = False
 
         elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
+            dim = 0
             if matrix_or_vector.shape[0] != tensor.shape[mode]:
                 raise ValueError(
                     'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
                         tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
                     ))
-            if len(new_shape) > 1:
-                new_shape.pop(mode)
-            else:
-                # Ideally this should be (), i.e. order-0 tensors
-                # MXNet currently doesn't support this though..
-                new_shape = []
-            vec = True
 
         else:
             raise ValueError('Can only take n_mode_product with a vector or a matrix.'
                              'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
-
-        res = T.dot(matrix_or_vector, unfold(tensor, mode))
-
-        if vec: # We contracted with a vector, leading to a vector
-            return vec_to_tensor(res, shape=new_shape)
-        else: # tensor times vec: refold the unfolding
-            return fold(res, fold_mode, new_shape)
+        
+        return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
 
 
-def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
+def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False, order_opt=False):
     """n-mode product of a tensor and several matrices or vectors over several modes
 
     Parameters
@@ -112,24 +147,45 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     if modes is None:
         modes = range(len(matrix_or_vec_list))
 
-    decrement = 0  # If we multiply by a vector, we diminish the dimension of the tensor
+    decrement = [0 for i in modes]  # If we multiply by a vector, we diminish the dimension of the tensor
 
     res = tensor
 
     # Order of mode dots doesn't matter for different modes
     # Sorting by mode shouldn't change order for equal modes
-    factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
-    for i, (matrix_or_vec, mode) in enumerate(factors_modes):
-        if (skip is not None) and (i == skip):
+    # list of (array, mode)
+    #factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
+
+    # here we should order modes by increasing ratio dim[1]/dim[0] (if contraction on second mode) (ask ref Bora)
+    ratio = []
+    for matrix_or_vec in matrix_or_vec_list:
+        if matrix_or_vec.ndim==1:
+            ratio.append(matrix_or_vec.shape[0])
+        else:
+            if transpose:
+                ratio.append(matrix_or_vec.shape[0]/matrix_or_vec.shape[1])
+            else:
+                ratio.append(matrix_or_vec.shape[1]/matrix_or_vec.shape[0])
+    if order_opt:
+        # supposed to be good but so bad :(
+        factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[2], reverse=False)
+    else:
+        factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[1])
+    print(factors_modes)
+
+    # we now need to handle ndim reduction after each contraction
+    for i, (matrix_or_vec, mode, _) in enumerate(factors_modes):
+        if (skip is not None) and (mode == skip):
             continue
 
         if transpose:
-            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement)
+            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement[i], fast=fast)
         else:
-            res = mode_dot(res, matrix_or_vec, mode - decrement)
+            res = mode_dot(res, matrix_or_vec, mode - decrement[i], fast=fast)
 
         if T.ndim(matrix_or_vec) == 1:
-            decrement += 1
+            decrement = [decrement[j] + 1 if factors_modes[j][1]>mode else decrement[j] for j in modes]
+            #decrement += 1
 
     return res
 

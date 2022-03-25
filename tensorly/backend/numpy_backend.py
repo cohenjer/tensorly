@@ -1,6 +1,8 @@
 import numpy as np
 from .core import Backend
 import scipy.special
+#import ttvpy as ttv
+from ttv import ttv
 
 class NumpyBackend(Backend, backend_name='numpy'):
 
@@ -35,6 +37,34 @@ class NumpyBackend(Backend, backend_name='numpy'):
     @staticmethod
     def dot(a, b):
         return a.dot(b)
+    
+    @staticmethod
+    def tensordot(a, b, axes=2, fast=False, **kwargs):
+        # name axes is not uniform across backends, thus the redefinition
+        # also the opportunity here to use faster contraction by bypassing numpy tensordot if available
+        # todo: check toolbox availability, better coding, more checks...
+        if b.ndim == 1 and fast:
+            # we are performing tensor times vector contraction
+            # processing axes
+            mode = axes[0][0]+1 # this supposes that tensordot for ttv is called as tensordot(a,b,([mode],[0]))
+            # ttv needs indexing starting from 1
+            return ttv(mode,a,b)
+        elif b.ndim ==1:
+            mode = axes[0][0] # this supposes that tensordot for ttv is called as tensordot(a,b,([mode],[0]))
+            return np.tensordot(a,b,axes=axes)
+        elif b.ndim ==2 and len(axes[0])==1:
+            # TTM
+            # not tested !!
+            # check if axes is provided
+            mode = axes[0][0]
+            out = np.tensordot(a,b,axes=axes)
+            # tensordot return the free mode on the last mode; we want it to be in place of the contracted one
+            order = [i for i in range(out.ndim)]
+            order[mode] = out.ndim -1
+            order[-1] = mode
+            return np.transpose(out, order)
+        else:
+            return np.tensordot(a,b,axes)
 
     @staticmethod
     def lstsq(a, b):
@@ -76,7 +106,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
+             'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'sin', 'cos', 'exp']:
     NumpyBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:

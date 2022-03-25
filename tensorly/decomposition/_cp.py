@@ -195,7 +195,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
             cvg_criterion='abs_rec_error',
             fixed_modes=None,
             svd_mask_repeats=5,
-            linesearch=False):
+            linesearch=False,
+            fast_ttv=False,
+            order_opt=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
 
@@ -244,6 +246,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
+    fast_ttv : bool, default is False
+        Uses Cem Bassoy's ttv instead of regular tensordot. For testing only.
 
     Returns
     -------
@@ -333,7 +337,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                     pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
             pseudo_inverse += Id
             pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
-            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode, fast=fast_ttv, order_opt=order_opt)
 
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
                                   tl.transpose(mttkrp)))

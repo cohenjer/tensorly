@@ -587,7 +587,7 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
             return cp_tensor
     
 
-def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
+def unfolding_dot_khatri_rao(tensor, cp_tensor, mode, fast = False, order_opt=False):
     """mode-n unfolding times khatri-rao product of factors
     
     Parameters
@@ -654,7 +654,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
     for r in range(rank):
-        component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
+        component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode, fast=fast, order_opt=order_opt)
         mttkrp_parts.append(component)
 
     if weights is None:
