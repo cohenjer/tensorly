@@ -104,7 +104,18 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
         return torch.matmul(a, b)
 
     @staticmethod
-    def tensordot(a, b, axes=2, **kwargs):
+    def tensordot(a, b, axes=2, fast=False, **kwargs): 
+        # name axes is not uniform across backends, thus the redefinition
+        if b.ndim ==2 and len(axes[0])==1:
+            # TTM
+            mode = axes[0][0]
+            out = torch.tensordot(a,b,dims=axes, **kwargs)
+            # tensordot return the free mode on the last mode; we want it to be in place of the contracted one
+            order = [i for i in range(out.ndim)]
+            order[mode] = out.ndim - 1
+            for i in range(mode+1,out.ndim):
+                order[i]-=1
+            return torch.permute(out, order)
         return torch.tensordot(a, b, dims=axes, **kwargs)
 
     @staticmethod

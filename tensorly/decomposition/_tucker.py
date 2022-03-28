@@ -162,6 +162,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
+    
 
     for iteration in range(n_iter_max):
         if mask is not None:
@@ -187,6 +188,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
                 if verbose:
                     print('converged in {} iterations.'.format(iteration))
                 break
+    
 
     return (core, factors)
 
@@ -265,6 +267,8 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         modes = list(range(tl.ndim(tensor)))
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
+        
+
 
         core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                                        svd=svd, tol=tol, random_state=random_state, mask=mask,

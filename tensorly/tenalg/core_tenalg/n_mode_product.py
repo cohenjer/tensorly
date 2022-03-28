@@ -110,7 +110,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
             return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
 
 
-def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False, order_opt=False):
+def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False):
     """n-mode product of a tensor and several matrices or vectors over several modes
 
     Parameters
@@ -147,44 +147,61 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     if modes is None:
         modes = range(len(matrix_or_vec_list))
 
-    decrement = [0 for i in modes]  # If we multiply by a vector, we diminish the dimension of the tensor
+    decrement = 0  # If we multiply by a vector, we diminish the dimension of the tensor
 
     res = tensor
 
     # Order of mode dots doesn't matter for different modes
     # Sorting by mode shouldn't change order for equal modes
-    # list of (array, mode)
-    #factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
-
-    # here we should order modes by increasing ratio dim[1]/dim[0] (if contraction on second mode) (ask ref Bora)
-    ratio = []
-    for matrix_or_vec in matrix_or_vec_list:
-        if matrix_or_vec.ndim==1:
-            ratio.append(matrix_or_vec.shape[0])
-        else:
-            if transpose:
-                ratio.append(matrix_or_vec.shape[0]/matrix_or_vec.shape[1])
-            else:
-                ratio.append(matrix_or_vec.shape[1]/matrix_or_vec.shape[0])
-    if order_opt:
-        # supposed to be good but so bad :(
-        factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[2], reverse=False)
-    else:
-        factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[1])
-
-    # we now need to handle ndim reduction after each contraction
-    for i, (matrix_or_vec, mode, _) in enumerate(factors_modes):
-        if (skip is not None) and (mode == skip):
+    factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
+    for i, (matrix_or_vec, mode) in enumerate(factors_modes):
+        if (skip is not None) and (i == skip):
             continue
 
         if transpose:
-            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement[i], fast=fast)
+            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement, fast=fast)
         else:
-            res = mode_dot(res, matrix_or_vec, mode - decrement[i], fast=fast)
+            res = mode_dot(res, matrix_or_vec, mode - decrement, fast=fast)
 
         if T.ndim(matrix_or_vec) == 1:
-            decrement = [decrement[j] + 1 if factors_modes[j][1]>mode else decrement[j] for j in modes]
-            #decrement += 1
+            decrement += 1
+    #if modes is None:
+        #modes = range(len(matrix_or_vec_list))
+
+    #decrement = [0 for i in modes]  # If we multiply by a vector, we diminish the dimension of the tensor
+
+    #res = tensor
+
+    ## Order of mode dots doesn't matter for different modes
+    ## Sorting by mode shouldn't change order for equal modes
+    ## list of (array, mode)
+    ##factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
+
+    ## here we should order modes by increasing ratio dim[1]/dim[0] (if contraction on second mode) (ask ref Bora)
+    #ratio = []
+    #for matrix_or_vec in matrix_or_vec_list:
+        #if matrix_or_vec.ndim==1:
+            #ratio.append(matrix_or_vec.shape[0])
+        #else:
+            #if transpose:
+                #ratio.append(matrix_or_vec.shape[0]/matrix_or_vec.shape[1])
+            #else:
+                #ratio.append(matrix_or_vec.shape[1]/matrix_or_vec.shape[0])
+        #factors_modes = sorted(zip(matrix_or_vec_list, modes, ratio), key=lambda x: x[1])
+
+    ## we now need to handle ndim reduction after each contraction
+    #for i, (matrix_or_vec, mode, _) in enumerate(factors_modes):
+        #if (skip is not None) and (mode == skip):
+            #continue
+
+        #if transpose:
+            #res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement[i], fast=fast)
+        #else:
+            #res = mode_dot(res, matrix_or_vec, mode - decrement[i], fast=fast)
+
+        #if T.ndim(matrix_or_vec) == 1:
+            #decrement = [decrement[j] + 1 if factors_modes[j][1]>mode else decrement[j] for j in modes]
+            ##decrement += 1
 
     return res
 

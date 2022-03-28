@@ -1,8 +1,11 @@
 import numpy as np
 from .core import Backend
 import scipy.special
-#import ttvpy as ttv
-from ttv import ttv
+# special gift from Cem Bassoy
+try:
+    from ttvpy import ttv
+except:
+    print('No local ttvpy package detected')
 
 class NumpyBackend(Backend, backend_name='numpy'):
 
@@ -50,7 +53,6 @@ class NumpyBackend(Backend, backend_name='numpy'):
             # ttv needs indexing starting from 1
             return ttv(mode,a,b)
         elif b.ndim ==1:
-            mode = axes[0][0] # this supposes that tensordot for ttv is called as tensordot(a,b,([mode],[0]))
             return np.tensordot(a,b,axes=axes)
         elif b.ndim ==2 and len(axes[0])==1:
             # TTM

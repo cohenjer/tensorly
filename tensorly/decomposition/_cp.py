@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import warnings
 
@@ -276,6 +277,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
     
+
+    
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
@@ -294,6 +297,31 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
 
             weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
 
+    # EXPERIMENTAL mode swapping for optimal contraction order later on
+    # here we should order modes by increasing ratio dim[1]/dim[0] (if contraction on second mode) (ask ref Bora)
+    if order_opt:
+        ratio = []
+        modes = range(len(factors))
+        for matrix_or_vec in factors:
+            if matrix_or_vec.ndim==1:
+                ratio.append(matrix_or_vec.shape[0])
+            else:
+                ratio.append(matrix_or_vec.shape[0]/matrix_or_vec.shape[1])
+        # contracting small dims first (i.e. put in first modes) should be faster
+        # Is not because striding changes or something --> dig deeper
+        modes_perm = sorted(zip(modes,ratio), key=lambda x: x[1], reverse=True)
+        # permute tensor data and (weights,factors)
+        permute_order = [modes_perm[i][0] for i in modes]
+        reverse_permute = [0 for i in modes]
+        for i in modes:
+            reverse_permute[permute_order[i]] = i
+        factors = [factors[permute_order[i]] for i in modes]
+        #print(tensor.strides)
+        tensor = tl.transpose(tensor,permute_order)
+        #print(tensor.strides,tensor.shape)
+    # END EXPERIMENTAL
+    # Note: CONFLICTING WITH FIXED MODE
+
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
@@ -305,10 +333,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         cp_tensor = CPTensor((weights, factors)) # No need to run optimization algorithm, just return the initialization
         return cp_tensor
 
-    if tl.ndim(tensor)-1 in fixed_modes:
-        warnings.warn('You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()')
-        fixed_modes.remove(tl.ndim(tensor)-1)
-    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+    if not order_opt:
+        if tl.ndim(tensor)-1 in fixed_modes:
+            warnings.warn('You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()')
+            fixed_modes.remove(tl.ndim(tensor)-1)
+        modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+    else:
+        modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+        #warnings.warn('Fixed modes is not supported right now with order_opt=True.')
         
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
@@ -337,7 +369,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                     pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
             pseudo_inverse += Id
             pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
-            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode, fast=fast_ttv, order_opt=order_opt)
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode, fast=fast_ttv)
 
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
                                   tl.transpose(mttkrp)))
@@ -418,11 +450,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
+
     
     if sparsity:
         sparse_component = sparsify_tensor(tensor - cp_to_tensor((weights, factors)),
                                            sparsity)
         cp_tensor = (cp_tensor, sparse_component)
+
+    # EXPERIMENTAL: Re-permute to restore original 
+    if order_opt:
+        factors = [factors[reverse_permute[i]] for i in modes]
+        tensor = tl.transpose(tensor,reverse_permute)
+    # END EXPERIMENTAL
 
     if return_errors:
         return cp_tensor, rec_errors
