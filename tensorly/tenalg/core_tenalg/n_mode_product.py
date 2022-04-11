@@ -18,9 +18,11 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
         transpose : bool, default is False
             If True, the matrix is transposed. 
             For complex tensors, the conjugate transpose is used. 
-        fast : bool or "old"
+        fast : bool or "legacy"
             Controls if we are running optimized ttv or not. for testing only
             "legacy" computes the regular nmode product from tensorly
+            False uses backend tensordot
+            True uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
 
         Returns
         -------
@@ -128,6 +130,12 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     transpose : bool, optional, default is False
         If True, the matrices or vectors in in the list are transposed.
         For complex tensors, the conjugate transpose is used. 
+        
+    fast : bool or "legacy"
+        Controls if we are running optimized ttv or not. for testing only
+        "legacy" computes the regular nmode product from tensorly
+        False uses backend tensordot
+        True uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
 
     Returns
     -------
@@ -165,6 +173,8 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
         if T.ndim(matrix_or_vec) == 1:
             decrement += 1
+
+
     #if modes is None:
         #modes = range(len(matrix_or_vec_list))
 
