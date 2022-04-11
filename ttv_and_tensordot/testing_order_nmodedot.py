@@ -33,14 +33,14 @@ for dims in dims_list:
         
         # tensordot orderopt
         tic2 = time.time()
-        out2 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=itermax, tol=0, fast_ttv=False, order_opt=opt)
+        out2 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=itermax, tol=0, fast_ttv="tensordot", order_opt=opt)
         toc2 = time.time()-tic2
         toc2 = round(toc2,3)
         out2[0].normalize()
         
         # Old tensordot
         tic4 = time.time()
-        out4 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=itermax, tol=0, fast_ttv=False, order_opt=False)
+        out4 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=itermax, tol=0, fast_ttv="tensordot", order_opt=False)
         toc4 = time.time()-tic4
         toc4 = round(toc4,3)
         out4[0].normalize()

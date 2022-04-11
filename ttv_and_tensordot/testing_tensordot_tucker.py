@@ -36,7 +36,7 @@ for dims in dims_list:
 
         # Tensordot
         tic = time.time()
-        tucker(tensor,ranke,init=copy.deepcopy(init), n_iter_max=50, tol=0, fast=False)
+        tucker(tensor,ranke,init=copy.deepcopy(init), n_iter_max=50, tol=0, fast="tensordot")
         toc = time.time()-tic
         toc = round(toc,3)
         

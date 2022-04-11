@@ -128,7 +128,7 @@ def ttvs(q,a,b, fast="ttvs-backward"):
     order = fast[5:]
     return tp.ttvs(q+1,a,b,order)
 
-def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False):
+def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = "legacy"):
     """n-mode product of a tensor and several matrices or vectors over several modes
 
     Parameters
