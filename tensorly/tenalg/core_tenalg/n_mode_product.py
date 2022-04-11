@@ -1,5 +1,11 @@
+from re import M
 from ... import backend as T
 from ... import unfold, fold, vec_to_tensor
+# special gift from Cem Bassoy --> todo: move to backend
+try:
+    import ttvpy as tp
+except:
+    print('No local ttvpy package detected')
 
 def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
         """n-mode product of a tensor and a matrix or vector at the specified mode
@@ -113,6 +119,12 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
             return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
 
 
+def ttvs(q,a,b):
+    # Using Cem Bassoy's implementation of several tensor-times-vector contractions,
+    #  here skipping mode q an contraction a with all vectors in list b.
+    order = "backward"
+    return tp.ttvs(q+1,a,b,order)
+
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False):
     """n-mode product of a tensor and several matrices or vectors over several modes
 
@@ -156,11 +168,13 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     """
     if T.get_backend()=='numpy' and fast=='ttvs' and skip>=0:
         # Calling TTVs
-        shapes_are_one = [matrix_or_vec_list[i].shape[1]==1 for i in range(len(matrix_or_vec_list))]
+        shapes_are_one = [matrix_or_vec_list[i].ndim==1 for i in range(len(matrix_or_vec_list))]
         if all(shapes_are_one):
+            # poping skiped vector
+            matrix_or_vec_list.pop(skip)
             # calling ttvs from the backend, actually ttvpy routine
             # using default order
-            return T.ttvs(skip, tensor, matrix_or_vec_list)
+            return ttvs(skip, tensor, matrix_or_vec_list)
 
 
     if modes is None:
