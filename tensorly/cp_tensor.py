@@ -3,7 +3,7 @@ Core operations on CP tensors.
 """
 
 from . import backend as T
-from .base import fold, tensor_to_vec
+from .base import fold, tensor_to_vec, unfold
 from ._factorized_tensor import FactorizedTensor
 from .tenalg import khatri_rao, multi_mode_dot
 from .utils import DefineDeprecated
@@ -604,6 +604,8 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode, fast = False):
         'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
         "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip.
         'tensordot' uses backend tensordot
+        "transpose-gemm" for unfolding into GEMM
+        "multi-mode-dot" for using multi-mode dot
     
     Returns
     -------
@@ -656,9 +658,24 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode, fast = False):
         factors = [f for (i, f) in enumerate(factors) if i != mode]
         return tl_einsum(op, tensor, *factors)
     """
-    mttkrp_parts = []
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
+
+    if fast=="transpose-gemm":
+        unfolded = unfold(tensor, mode)
+        kr_factors = khatri_rao(factors, skip_matrix=mode)
+        return T.dot(unfolded, kr_factors)
+
+    if fast=="multi-mode-dot":
+        projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
+        ndims = T.ndim(tensor)
+        res = []
+        for i in range(factors[0].shape[1]):
+            index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
+            res.append(projected[index])
+        return T.stack(res, axis=-1)
+
+    mttkrp_parts = []
     for r in range(rank):
         component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode, fast=fast)
         mttkrp_parts.append(component)

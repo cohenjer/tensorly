@@ -20,7 +20,7 @@ for dims in dims_list:
         gt.normalize()
         tensor = gt.to_tensor() #+ 0.001*np.random.randn(*dims)
 
-        ranke = 3
+        ranke = 6
         init = random_cp(dims,ranke)
 
         # Tensordot
@@ -65,24 +65,37 @@ for dims in dims_list:
         toc6 = round(toc6,3)
         out6[0].normalize()
 
+        # Tensorly with Transpose GEMM
+        tic7 = time.time()
+        out7 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=50, tol=0, fast_ttv="transpose-gemm")
+        toc7 = time.time()-tic7
+        toc7 = round(toc7,3)
+        out7[0].normalize()
+
+        # Tensorly with MTTKRP as large multi-mode dot
+        tic8 = time.time()
+        out8 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=50, tol=0, fast_ttv="multi-mode-dot")
+        toc8 = time.time()-tic8
+        toc8 = round(toc8,3)
+        out8[0].normalize()
 
         # Checking if output is correct
-        print('Run time for tensordot: {}, for ttv: {}, for ttvs-f: {}, for ttvs-b: {}, for ttvs-o: {}, for legacy: {}'.format(toc, toc2, toc3, toc4, toc5, toc6))
-        print('Final MSE for tensordot: {}, for ttv: {}, for ttvs-f: {}, for ttvs-b: {}, for ttvs-o: {}, for legacy: {}'.format(round(out[1][-1],3),round(out2[1][-1],3), round(out3[1][-1],3),round(out4[1][-1],3),round(out5[1][-1],3), round(out6[1][-1],3)))
+        print('Run time tensordot: {}, ttv: {}, ttvs-f: {}, ttvs-b: {},\n ttvs-o: {}, legacy: {}, t-gemm: {}, nmoded: {}'.format(toc, toc2, toc3, toc4, toc5, toc6, toc7, toc8))
+        #print('Final MSE tensordot: {}, ttv: {}, ttvs-f: {}, ttvs-b: {},\n ttvs-o: {}, legacy: {}, t-gemm: {}, nmoded: {}'.format(round(out[1][-1],3),round(out2[1][-1],3), round(out3[1][-1],3),round(out4[1][-1],3),round(out5[1][-1],3), round(out6[1][-1],3), round(out7[1][-1],3), round(out8[1][-1],3)))
         print('')
 
         dic = {
-            'dims': 6*[str(dims)],
-            'runtime': [toc, toc2, toc3, toc4, toc5, toc6],
-            'recerror': [round(out[1][-1],3), round(out2[1][-1],3), round(out3[1][-1],3), round(out4[1][-1],3), round(out5[1][-1],3), round(out6[1][-1],3)],
-            'algorithm':['tensordot', 'ttv', 'ttvs-forward', 'ttvs-backward', 'ttvs-optimal', 'legacy']
+            'dims': 8*[str(dims)],
+            'runtime': [toc, toc2, toc3, toc4, toc5, toc6, toc7, toc8],
+            'recerror': [round(out[1][-1],3), round(out2[1][-1],3), round(out3[1][-1],3), round(out4[1][-1],3), round(out5[1][-1],3), round(out6[1][-1],3), round(out7[1][-1],3), round(out8[1][-1],3)],
+            'algorithm':['tensordot', 'ttv', 'ttvs-forward', 'ttvs-backward', 'ttvs-optimal', 'two loops transpose-gemm (current)', 'transpose-gemm', 'large multi-mode-dot']
         }
         data = pd.DataFrame(dic)
         store_pd = store_pd.append(data, ignore_index=True)
 
 print(store_pd.groupby('algorithm').mean())
 
-fig = px.box(store_pd, x='dims',y='runtime', color='algorithm', log_y=True, title='ALS algorithm runtime in Tensorly (rank=3, 50 iterations) with ttvpy.ttv(s) vs tensordot vs legacy', width=1904, height=916)
+fig = px.box(store_pd, x='dims',y='runtime', color='algorithm', log_y=True, title='ALS algorithm runtime in Tensorly (rank={}, 50 iterations) with ttvpy.ttv(s) vs tensordot vs legacy'.format(ranke), width=1904, height=916)
 fig.update_layout(
     font=dict(size=18)
 )
