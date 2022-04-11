@@ -52,11 +52,11 @@ for dims in dims_list:
         out4[0].normalize()
 
         # TTVs subopt (optimal order)
-        #tic5 = time.time()
-        #out5 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=50, tol=0, fast_ttv='ttvs-forward')
-        #toc5 = time.time()-tic5
-        #toc5 = round(toc5,3)
-        #out5[0].normalize()
+        tic5 = time.time()
+        out5 = parafac(tensor,ranke, init=copy.deepcopy(init), return_errors=True, n_iter_max=50, tol=0, fast_ttv='ttvs-optimal')
+        toc5 = time.time()-tic5
+        toc5 = round(toc5,3)
+        out5[0].normalize()
 
         # Current version
         tic6 = time.time()
@@ -67,15 +67,15 @@ for dims in dims_list:
 
 
         # Checking if output is correct
-        print('Run time for tensordot: {}, for ttv: {}, for ttvs-forward: {}, for ttvs-backward: {}, for legacy: {}'.format(toc, toc2, toc3, toc4, toc6))
-        print('Final MSE for tensordot: {}, for ttv: {}, for ttvs-forward: {}, for ttvs-backward: {}, for legacy: {}'.format(round(out[1][-1],3),round(out2[1][-1],3), round(out3[1][-1],3),round(out4[1][-1],3),round(out4[1][-1],3)))
+        print('Run time for tensordot: {}, for ttv: {}, for ttvs-f: {}, for ttvs-b: {}, for ttvs-o: {}, for legacy: {}'.format(toc, toc2, toc3, toc4, toc5, toc6))
+        print('Final MSE for tensordot: {}, for ttv: {}, for ttvs-f: {}, for ttvs-b: {}, for ttvs-o: {}, for legacy: {}'.format(round(out[1][-1],3),round(out2[1][-1],3), round(out3[1][-1],3),round(out4[1][-1],3),round(out5[1][-1],3), round(out6[1][-1],3)))
         print('')
 
         dic = {
-            'dims': 5*[str(dims)],
-            'runtime': [toc, toc2, toc3, toc4, toc6],
-            'recerror': [round(out[1][-1],3), round(out2[1][-1],3), round(out3[1][-1],3), round(out4[1][-1],3), round(out6[1][-1],3)],
-            'algorithm':['tensordot', 'ttv', 'ttvs-forward', 'ttvs-backward', 'legacy']
+            'dims': 6*[str(dims)],
+            'runtime': [toc, toc2, toc3, toc4, toc5, toc6],
+            'recerror': [round(out[1][-1],3), round(out2[1][-1],3), round(out3[1][-1],3), round(out4[1][-1],3), round(out5[1][-1],3), round(out6[1][-1],3)],
+            'algorithm':['tensordot', 'ttv', 'ttvs-forward', 'ttvs-backward', 'ttvs-optimal', 'legacy']
         }
         data = pd.DataFrame(dic)
         store_pd = store_pd.append(data, ignore_index=True)
