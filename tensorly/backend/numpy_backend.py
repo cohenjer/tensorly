@@ -42,11 +42,12 @@ class NumpyBackend(Backend, backend_name='numpy'):
         return a.dot(b)
     
     @staticmethod
-    def tensordot(a, b, axes=2, fast=False, **kwargs):
+    def tensordot(a, b, axes=2, fast='tensordot', **kwargs):
         # name axes is not uniform across backends, thus the redefinition
         # also the opportunity here to use faster contraction by bypassing numpy tensordot if available
         # todo: check toolbox availability, better coding, more checks...
-        if b.ndim == 1 and fast:
+        if b.ndim == 1 and fast[:3]=='ttv':
+            # accepting ttv and ttvs
             # we are performing tensor times vector contraction
             # processing axes
             mode = axes[0][0]+1 # this supposes that tensordot for ttv is called as tensordot(a,b,([mode],[0]))
@@ -72,6 +73,7 @@ class NumpyBackend(Backend, backend_name='numpy'):
     def ttvs(q,a,b):
         # Using Cem Bassoy's implementation of several tensor-times-vector contractions,
         #  here skipping mode q an contraction a with all vectors in list b.
+        print('coucou')
         order = 'optimal'
         return ttvs(q+1,a,b,order)
 

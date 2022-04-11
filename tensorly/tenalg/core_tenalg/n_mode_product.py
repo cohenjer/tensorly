@@ -21,8 +21,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
         fast : bool or "legacy"
             Controls if we are running optimized ttv or not. for testing only
             "legacy" computes the regular nmode product from tensorly
-            False uses backend tensordot
-            True uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+            'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+            "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip. Uses ttv if ttvs do not make sense.
+            'tensordot' uses backend tensordot
 
         Returns
         -------
@@ -134,8 +135,9 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     fast : bool or "legacy"
         Controls if we are running optimized ttv or not. for testing only
         "legacy" computes the regular nmode product from tensorly
-        False uses backend tensordot
-        True uses Cem Bassoy's TTV(s) implementation (restrictions: numpy and vector contraction only; ttvs requires skip)
+        'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+        "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip. Uses ttv if ttvs do not make sense.
+        'tensordot' uses backend tensordot
 
     Returns
     -------
@@ -152,13 +154,13 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     --------
     mode_dot
     """
-    if T.get_backend()=='numpy' and fast and skip>=0:
+    if T.get_backend()=='numpy' and fast=='ttvs' and skip>=0:
         # Calling TTVs
         shapes_are_one = [matrix_or_vec_list[i].shape[1]==1 for i in range(len(matrix_or_vec_list))]
         if all(shapes_are_one):
             # calling ttvs from the backend, actually ttvpy routine
             # using default order
-            T.ttvs(skip, tensor, matrix_or_vec_list)
+            return T.ttvs(skip, tensor, matrix_or_vec_list)
 
 
     if modes is None:

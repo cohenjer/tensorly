@@ -247,8 +247,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
-    fast_ttv : bool, default is False
-        Uses Cem Bassoy's ttv instead of regular tensordot. For testing only.
+    fast_ttv : bool or "legacy"
+        Controls if we are running optimized ttv or not. for testing only
+        "legacy" computes the regular nmode product from tensorly
+        'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+        "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip.
+        'tensordot' uses backend tensordot
 
     Returns
     -------

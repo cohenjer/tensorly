@@ -598,6 +598,12 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode, fast = False):
         list of matrices of which to the khatri-rao product
     mode : int
         mode on which to unfold `tensor`
+    fast : bool or "legacy"
+        Controls if we are running optimized ttv or not. for testing only
+        "legacy" computes the regular nmode product from tensorly
+        'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+        "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip.
+        'tensordot' uses backend tensordot
     
     Returns
     -------
