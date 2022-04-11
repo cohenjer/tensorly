@@ -252,6 +252,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         "legacy" computes the regular nmode product from tensorly
         'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
         "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip.
+            "ttvs-forward" calls ttv from first mode
+            "ttvs-backward" calls from last mode (default)
+            "ttvs-optimal" find the optimal contraction order
         'tensordot' uses backend tensordot
 
     Returns

@@ -29,6 +29,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
             "legacy" computes the regular nmode product from tensorly
             'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
             "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip. Uses ttv if ttvs do not make sense.
+                "ttvs-forward" calls ttv from first mode
+                "ttvs-backward" calls from last mode (default)
+                "ttvs-optimal" find the optimal contraction order
             'tensordot' uses backend tensordot
 
         Returns
@@ -119,10 +122,10 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False, fast=False):
             return T.tensordot(tensor,matrix_or_vector, axes=([mode],[dim]), fast=fast)
 
 
-def ttvs(q,a,b):
+def ttvs(q,a,b, fast="ttvs-backward"):
     # Using Cem Bassoy's implementation of several tensor-times-vector contractions,
     #  here skipping mode q an contraction a with all vectors in list b.
-    order = "backward"
+    order = fast[5:]
     return tp.ttvs(q+1,a,b,order)
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False, fast = False):
@@ -149,6 +152,9 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
         "legacy" computes the regular nmode product from tensorly
         'ttv' uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
         "ttvs" for full c implementation of several ttv (Cem Bassoy's TTVs), requires skip. Uses ttv if ttvs do not make sense.
+            "ttvs-forward" calls ttv from first mode
+            "ttvs-backward" calls from last mode (default)
+            "ttvs-optimal" find the optimal contraction order
         'tensordot' uses backend tensordot
 
     Returns
@@ -166,7 +172,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     --------
     mode_dot
     """
-    if T.get_backend()=='numpy' and fast=='ttvs' and skip>=0:
+    if T.get_backend()=='numpy' and fast[:4]=='ttvs' and skip>=0:
         # Calling TTVs
         shapes_are_one = [matrix_or_vec_list[i].ndim==1 for i in range(len(matrix_or_vec_list))]
         if all(shapes_are_one):
@@ -174,7 +180,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             matrix_or_vec_list.pop(skip)
             # calling ttvs from the backend, actually ttvpy routine
             # using default order
-            return ttvs(skip, tensor, matrix_or_vec_list)
+            return ttvs(skip, tensor, matrix_or_vec_list, fast)
 
 
     if modes is None:
