@@ -135,7 +135,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
         Controls if we are running optimized ttv or not. for testing only
         "legacy" computes the regular nmode product from tensorly
         False uses backend tensordot
-        True uses Cem Bassoy's TTV implementation (restrictions: numpy and vector contraction only)
+        True uses Cem Bassoy's TTV(s) implementation (restrictions: numpy and vector contraction only; ttvs requires skip)
 
     Returns
     -------
@@ -152,6 +152,15 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     --------
     mode_dot
     """
+    if T.get_backend()=='numpy' and fast and skip>=0:
+        # Calling TTVs
+        shapes_are_one = [matrix_or_vec_list[i].shape[1]==1 for i in range(len(matrix_or_vec_list))]
+        if all(shapes_are_one):
+            # calling ttvs from the backend, actually ttvpy routine
+            # using default order
+            T.ttvs(skip, tensor, matrix_or_vec_list)
+
+
     if modes is None:
         modes = range(len(matrix_or_vec_list))
 

@@ -3,7 +3,7 @@ from .core import Backend
 import scipy.special
 # special gift from Cem Bassoy
 try:
-    from ttvpy import ttv
+    from ttvpy import ttv, ttvs
 except:
     print('No local ttvpy package detected')
 
@@ -67,6 +67,13 @@ class NumpyBackend(Backend, backend_name='numpy'):
             return np.transpose(out, order)
         else:
             return np.tensordot(a,b,axes)
+    
+    @staticmethod
+    def ttvs(q,a,b):
+        # Using Cem Bassoy's implementation of several tensor-times-vector contractions,
+        #  here skipping mode q an contraction a with all vectors in list b.
+        order = 'optimal'
+        return ttvs(q+1,a,b,order)
 
     @staticmethod
     def lstsq(a, b):
