@@ -6,6 +6,7 @@ from tensorly.base import unfold, fold, vec_to_tensor
 
 PREVIOUS_EINSUM = None
 PREVIOUS_MODE_DOT = None
+PREVIOUS_MULTI_MODE_DOT = None
 OPT_EINSUM_PATH_CACHE = dict()
 CUQUANTUM_PATH_CACHE = dict()
 CUQUANTUM_HANDLE = None
@@ -14,6 +15,7 @@ CUQUANTUM_HANDLE = None
 def use_ttm_bassoy():
     """Swap the default tensorly implementation of mode_dot (which relies on the backend) for the Cem Bassoy TTM implementation in C, available [here](https://github.com/bassoy/ttm/tree/main)."""
     global PREVIOUS_MODE_DOT
+    global PREVIOUS_MULTI_MODE_DOT
     
     try:
         import ttmpy
@@ -74,24 +76,70 @@ def use_ttm_bassoy():
             print("Using TTM Bassoy")
             res = ttmpy.ttm(mode+1, tensor, matrix_or_vector)
             return fold(res, fold_mode, new_shape)
+       
+    def bassoy_ttm_loop(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
+        """Does not authorize contraction with a vector (only all vectors)
+        TODO correct bug when skipping last mode??"""
         
+        if modes is None:
+            modes = range(len(matrix_or_vec_list))
+            
+        # if only vectors, use ttvs
+        modes_ttvs = []
+        ttvs = True
+        for i, vec in enumerate(matrix_or_vec_list):
+            if tl.ndim(vec) > 1:
+                ttvs = False
+                break
+            modes_ttvs.append(i + 1)
+        if ttvs and skip: #TTVs accepts contraction with vecs on all but one dim
+            print("Using bassoy TTVs")
+            return ttvpy.ttvs(skip+1, tensor, matrix_or_vec_list, order='forward') #forward better than optimal ?? 
+           
+        # else implement ttms with loop (waiting for builtin method in ttmpy) 
+        res = tensor
+        decrement = 0
+        # Order of mode dots doesn't matter for different modes
+        # Sorting by mode shouldn't change order for equal modes
+        factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
+        print("Using bassoy TTM over loop")
+        for i, (matrix_or_vec, mode) in enumerate(factors_modes):
+            if tl.ndim(matrix_or_vec) == 1:
+                print("Unauthorized mixture of vector and matrix shape in bassoy ttms, TODO test")
+                return
+            if (skip is not None) and (i == skip):
+                continue
+            if transpose:
+                res = bassoy_ttm(res, tl.conj(tl.transpose(matrix_or_vec)), mode - decrement)
+            else:
+                res = bassoy_ttm(res, matrix_or_vec, mode - decrement)
+                
+            if tl.ndim(matrix_or_vec) == 1:
+                    decrement += 1
+        return res
+ 
     if PREVIOUS_MODE_DOT is None:
         PREVIOUS_MODE_DOT = tl.tenalg.core_tenalg.mode_dot
+        PREVIOUS_MULTI_MODE_DOT = tl.tenalg.core_tenalg.multi_mode_dot
         
     print("Switching to Bassoy mode_dot")
     tl.tenalg.register_backend_method("mode_dot", bassoy_ttm)
+    tl.tenalg.register_backend_method("multi_mode_dot", bassoy_ttm_loop)
     tl.tenalg.use_dynamic_dispatch()
 
 
 def use_default_mode_dot():
     """Revert to the original einsum for the current backend"""
     global PREVIOUS_MODE_DOT
+    global PREVIOUS_MULTI_MODE_DOT
 
     if PREVIOUS_MODE_DOT is not None:
         print("Switching back to default mode_dot")
         tl.tenalg.register_backend_method("mode_dot", PREVIOUS_MODE_DOT)
+        tl.tenalg.register_backend_method("multi_mode_dot", PREVIOUS_MULTI_MODE_DOT)
         tl.tenalg.use_dynamic_dispatch()
         PREVIOUS_MODE_DOT = None
+        PREVIOUS_MULTI_MODE_DOT = None
         
 def use_default_einsum():
     """Revert to the original einsum for the current backend"""
