@@ -7,6 +7,7 @@ from tensorly.solvers.proximal import (
     soft_thresholding,
     procrustes,
     hard_thresholding,
+    hard_thresholding_columnwise,
     soft_sparsity_prox,
     simplex_prox,
     normalized_sparsity_prox,
@@ -47,6 +48,18 @@ def test_hard_thresholding():
     threshold = 2
     res = hard_thresholding(tensor, threshold)
     true_res = tl.tensor([[0, 0, 0], [4.0, -6.0, 0], [0, 0, 0]])
+    assert_array_almost_equal(true_res, res)
+    # Check that we did not change the original tensor
+    assert_array_equal(copy_tensor, tensor)
+
+
+def test_hard_thresholding_columnwise():
+    """Test for hard_thresholding operator"""
+    tensor = tl.tensor([[1, 2, 1.5], [4, -6, -0.5], [0.2, 1.2, -3.4]])
+    copy_tensor = tl.copy(tensor)
+    threshold = 2
+    res = hard_thresholding_columnwise(tensor, threshold)
+    true_res = tl.tensor([[1., 2, 1.5], [4.0, -6.0, 0.], [0., 0., -3.4]])
     assert_array_almost_equal(true_res, res)
     # Check that we did not change the original tensor
     assert_array_equal(copy_tensor, tensor)

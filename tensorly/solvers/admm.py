@@ -22,6 +22,7 @@ def admm(
     smoothness=None,
     monotonicity=None,
     hard_sparsity=None,
+    hard_sparsity_columnwise=None,
     tol=1e-4,
 ):
     """
@@ -78,6 +79,8 @@ def admm(
         If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
         Hard thresholding with the given threshold
+    hard_sparsity_columnwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied columnwise on factor matrices.
     tol : float
 
     Returns
@@ -138,6 +141,7 @@ def admm(
             smoothness=smoothness,
             monotonicity=monotonicity,
             hard_sparsity=hard_sparsity,
+            hard_sparsity_columnwise=hard_sparsity_columnwise,
             n_const=n_const,
             order=order,
         )
