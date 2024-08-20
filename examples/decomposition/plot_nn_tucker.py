@@ -73,7 +73,7 @@ def callback_error_mu(_, error):
  
 tensor_mu = non_negative_tucker(tensor, rank=[5, 5, 5], tol=0, n_iter_max=2500, callback=callback_error_mu)
 tucker_reconstruction_mu = tl.tucker_to_tensor(tensor_mu)
-time_mu = time.time()-tic
+time_mu = time.time() - tic
 
 ##############################################################################
 # Here, we also compute the output tensor from the decomposed factors by using
@@ -100,7 +100,7 @@ def callback_error(_, error):
     
 tensor_hals_fista = non_negative_tucker_hals(tensor, rank=[5, 5, 5], callback=callback_error, inner_iter_max=20, inner_iter_max_fista=60, tol=0)
 tucker_reconstruction_fista = tl.tucker_to_tensor(tensor_hals_fista)
-time_fista = time.time()-ticnew
+time_fista = time.time() - ticnew
 
 ##############################################################################
 # Comparison
@@ -127,8 +127,8 @@ print('RMSE for HALS+FISTA:'+' ' + str(RMSE(tensor, tucker_reconstruction_fista)
 # the difference in convergence speed on the following error per iteration plot:
 
 
-def each_iteration(a,b,title):
-    fig=plt.figure()
+def each_iteration(a, b, c, title):
+    fig = plt.figure()
     fig.set_size_inches(10, fig.get_figheight(), forward=True)
     plt.loglog(a)
     plt.loglog(b)

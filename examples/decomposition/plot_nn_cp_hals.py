@@ -53,11 +53,17 @@ tensor = tensor_cp.to_tensor()
 # for our NCP. In fact, in order to compare both algorithmic options in a
 # fair way, it is a good idea to use same initialized factors in decomposition
 # algorithms. We make use of the ``initialize_cp`` function to initialize the
-# factors of the NCP (setting the ``non_negative`` option to `True`) 
+# factors of the NCP (setting the ``non_negative`` option to `True`)
 # and transform these factors (and factors weights) into
 # an instance of the CPTensor class:
 
+<<<<<<< HEAD
 weights_init, factors_init = initialize_cp(tensor, non_negative=True, init='random', rank=10, random_state=rng)
+=======
+weights_init, factors_init = initialize_cp(
+    tensor, non_negative=True, init="random", rank=10
+)
+>>>>>>> main
 
 cp_init = CPTensor((weights_init, factors_init))
 
@@ -69,14 +75,20 @@ cp_init = CPTensor((weights_init, factors_init))
 # Multiplicative Update, which can be called as follows:
 
 tic = time.time()
+<<<<<<< HEAD
 errors_mu = []
 def callback_error_mu(_,error):
     errors_mu.append(error)
     
 
 tensor_mu = non_negative_parafac(tensor, rank=10, init=deepcopy(cp_init), n_iter_max=1100, tol=0, callback=callback_error_mu)
+=======
+tensor_mu, errors_mu = non_negative_parafac(
+    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
+)
+>>>>>>> main
 cp_reconstruction_mu = tl.cp_to_tensor(tensor_mu)
-time_mu = time.time()-tic
+time_mu = time.time() - tic
 
 ##############################################################################
 # Note that to obtain the error at each iteration we can invoke a user-defined
@@ -90,8 +102,8 @@ time_mu = time.time()-tic
 # first few values of both tensors shows that this is indeed
 # the case but the approximation is quite coarse.
 
-print('reconstructed tensor\n', cp_reconstruction_mu[10:12, 10:12, 10:12], '\n')
-print('input data tensor\n', tensor[10:12, 10:12, 10:12])
+print("reconstructed tensor\n", cp_reconstruction_mu[10:12, 10:12, 10:12], "\n")
+print("input data tensor\n", tensor[10:12, 10:12, 10:12])
 
 ##############################################################################
 # Nonnegative Parafac with HALS
@@ -110,14 +122,14 @@ def callback_error(_,error):
 tic = time.time()
 tensor_hals = non_negative_parafac_hals(tensor, rank=10, init=deepcopy(cp_init), callback=callback_error, tol=0, n_iter_max=50)
 cp_reconstruction_hals = tl.cp_to_tensor(tensor_hals)
-time_hals = time.time()-tic
+time_hals = time.time() - tic
 
 
 ##############################################################################
 # Again, we can look at the reconstructed tensor entries.
 
-print('reconstructed tensor\n',cp_reconstruction_hals[10:12, 10:12, 10:12], '\n')
-print('input data tensor\n', tensor[10:12, 10:12, 10:12])
+print("reconstructed tensor\n", cp_reconstruction_hals[10:12, 10:12, 10:12], "\n")
+print("input data tensor\n", tensor[10:12, 10:12, 10:12])
 
 ##############################################################################
 # Nonnegative Parafac with tuned-parameters HALS
@@ -152,6 +164,7 @@ print(str("{:.2f}".format(time_hals)) + ' ' + 'seconds')
 print(str("{:.2f}".format(time_tuned)) + ' ' + 'seconds')
 
 from tensorly.metrics.regression import RMSE
+
 print(RMSE(tensor, cp_reconstruction_mu))
 print(RMSE(tensor, cp_reconstruction_hals))
 print(RMSE(tensor, cp_reconstruction_tuned))
@@ -163,8 +176,10 @@ print(RMSE(tensor, cp_reconstruction_tuned))
 # in convergence speed on the following error per iteration plot.
 
 import matplotlib.pyplot as plt
-def each_iteration(a,b,c,title):
-    fig=plt.figure()
+
+
+def each_iteration(a, b, c, title):
+    fig = plt.figure()
     fig.set_size_inches(10, fig.get_figheight(), forward=True)
     plt.loglog(a)
     plt.loglog(b)
