@@ -307,7 +307,10 @@ class TuckerTensor(FactorizedTensor):
         )
 
     def normalize(self):
-        """TODO doc"""
+        """
+        Transforms the tucker_tensor with `self.factors` normalised to unit length.
+        The normalizing constants absorbed into `self.core`.
+        """
         self.core, self.factors = tucker_normalize(self)
 
 

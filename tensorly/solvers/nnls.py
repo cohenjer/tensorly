@@ -12,7 +12,7 @@ def hals_nnls(
     ridge_coefficient=None,
     nonzero_rows=False,
     exact=False,
-    epsilon=0,
+    epsilon=0.0,
     callback=None,
 ):
     """
@@ -39,7 +39,7 @@ def hals_nnls(
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
-    n_iter_max: Postive integer
+    n_iter_max: Positive integer
         Upper bound on the number of iterations
         Default: 500
     tol : float in [0,1]
@@ -243,7 +243,7 @@ def fista(
         lr = 1 / (tl.truncated_svd(UtU)[1][0] + 2 * ridge_coef)
     # Parameters
     momentum_old = 1.0  # tl.tensor(1.0)
-    norm_0 = 0
+    norm_0 = 0.0
     x_update = tl.copy(x)
 
     for iteration in range(n_iter_max):

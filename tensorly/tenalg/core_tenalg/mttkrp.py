@@ -27,13 +27,13 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     -----
     Default unfolding_dot_khatri_rao implementation.
 
-    Implemented as the naive product between an unfolded tensor
+    Implemented as the product between an unfolded tensor
     and a Khatri-Rao product explicitly formed. Due to matrix-matrix
-    products being extremely efficients operations, this is a
+    products being extremely efficient operations, this is a
     simple yet hard-to-beat implementation of MTTKRP.
 
     If working with sparse tensors, or when the CP-rank of the CP-tensor is comparable to, or larger than,
-    the dimensions of the input tensor, this method however requires a lot
+    the dimensions of the input tensor, however, this method requires a lot
     of memory, which can be harmful when dealing with large tensors. In this
     case, please use the memory-efficient version of MTTKRP.
 

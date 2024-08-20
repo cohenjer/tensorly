@@ -724,7 +724,6 @@ def non_negative_tucker_hals(
                     ridge_coefficient=ridge_coefficients[mode],
                     epsilon=epsilon,
                 )
-                nn_factors[mode] = tl.transpose(nn_factor)
             else:
                 if sparsity_coefficients[mode]:
                     warnings.warn(
@@ -733,9 +732,11 @@ def non_negative_tucker_hals(
                 nn_factor = tl.solve(
                     UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]), Mut
                 )
-                nn_factors[mode] = tl.transpose(nn_factor)
+                
+            nn_factors[mode] = tl.transpose(nn_factor)
 
-        # updating core with FISTA for flexibility
+        
+        # updating core
         pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
         core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
 
