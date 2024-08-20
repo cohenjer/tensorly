@@ -200,7 +200,7 @@ def non_negative_parafac(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
@@ -483,7 +483,7 @@ def non_negative_parafac_hals(
                     )
                 else:
                     print(f"first iteration, initial loss={rec_errors[-1]}.")
-            if tol and iteration >= 1 and abs(rec_error_decrease) < tol:
+            if tol and iteration >= 1 and tl.abs(rec_error_decrease) < tol:
                 if verbose:
                     print(f"PARAFAC converged after {iteration} iterations.")
                 break
