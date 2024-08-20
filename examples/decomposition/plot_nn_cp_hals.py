@@ -57,20 +57,9 @@ tensor = tensor_cp.to_tensor()
 # and transform these factors (and factors weights) into
 # an instance of the CPTensor class:
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-weights_init, factors_init = initialize_cp(tensor, non_negative=True, init='random', rank=10, random_state=rng)
-=======
->>>>>>> dd54f45741128ef3944c1dd1b12b430165343637
 weights_init, factors_init = initialize_cp(
-    tensor, non_negative=True, init='random', rank=10, random_state=rng
+    tensor, non_negative=True, init="random", rank=10
 )
-<<<<<<< HEAD
-=======
->>>>>>> main
->>>>>>> dd54f45741128ef3944c1dd1b12b430165343637
-
 cp_init = CPTensor((weights_init, factors_init))
 
 ##############################################################################
@@ -81,27 +70,14 @@ cp_init = CPTensor((weights_init, factors_init))
 # Multiplicative Update, which can be called as follows:
 
 tic = time.time()
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> dd54f45741128ef3944c1dd1b12b430165343637
 errors_mu = []
 def callback_error_mu(_,error):
     errors_mu.append(error)
     
 
-<<<<<<< HEAD
 tensor_mu = non_negative_parafac(
     tensor, rank=10, init=deepcopy(cp_init), n_iter_max=1100, tol=0, callback=callback_error_mu
 )
-=======
-tensor_mu = non_negative_parafac(tensor, rank=10, init=deepcopy(cp_init), n_iter_max=1100, tol=0, callback=callback_error_mu)
-=======
-tensor_mu, errors_mu = non_negative_parafac(
-    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
-)
->>>>>>> main
->>>>>>> dd54f45741128ef3944c1dd1b12b430165343637
 cp_reconstruction_mu = tl.cp_to_tensor(tensor_mu)
 time_mu = time.time() - tic
 
@@ -135,8 +111,8 @@ def callback_error(_,error):
     
 
 tic = time.time()
-tensor_hals = non_negative_parafac_hals(
-    tensor, rank=10, init=deepcopy(cp_init), callback=callback_error, tol=0, n_iter_max=50
+tensor_hals, errors_hals = non_negative_parafac_hals(
+    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
 )
 cp_reconstruction_hals = tl.cp_to_tensor(tensor_hals)
 time_hals = time.time() - tic
