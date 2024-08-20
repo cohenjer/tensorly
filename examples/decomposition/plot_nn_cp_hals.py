@@ -111,8 +111,8 @@ def callback_error(_,error):
     
 
 tic = time.time()
-tensor_hals, errors_hals = non_negative_parafac_hals(
-    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
+tensor_hals = non_negative_parafac_hals(
+    tensor, rank=10, init=deepcopy(cp_init), callback=callback_error
 )
 cp_reconstruction_hals = tl.cp_to_tensor(tensor_hals)
 time_hals = time.time() - tic
