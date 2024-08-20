@@ -133,7 +133,7 @@ def scale_factors_fro(
     grad_poly[2 * n_modes - 1] = 2 * n_modes * a
     grad_poly.reverse()
     roots = np.roots(grad_poly)
-    current_best = np.Inf
+    current_best = np.inf
     best_x = 0
     for sol in roots:
         if sol.imag < 1e-16:
@@ -143,7 +143,7 @@ def scale_factors_fro(
                 if val < current_best:
                     current_best = val
                     best_x = sol
-    if current_best == np.Inf:
+    if current_best == np.inf:
         warnings.warn("No solution to optimal scaling")
         return tensor, None
 
