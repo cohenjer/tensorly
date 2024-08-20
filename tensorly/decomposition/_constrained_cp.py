@@ -281,7 +281,7 @@ def constrained_parafac(
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
-    _, _ = validate_constraints(
+    validate_constraints(
         non_negative=non_negative,
         l1_reg=l1_reg,
         l2_reg=l2_reg,

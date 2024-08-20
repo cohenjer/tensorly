@@ -15,11 +15,107 @@ def validate_constraints(
     monotonicity=None,
     hard_sparsity=None,
     n_const=1,
+):
+    """
+    Validates input constraints for constrained parafac decomposition.
+
+    Parameters
+    ----------
+    non_negative : bool or dictionary
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
+    l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
+    l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
+    unimodality : bool or dictionary, optional
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
+    normalize : bool or dictionary, optional
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
+    simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
+    normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
+    soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
+    smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
+    monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
+    hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
+    n_const : int
+        Number of constraints. If it is None, function returns input tensor.
+        Default : 1
+    """
+    constraints_list = [
+        non_negative,
+        l1_reg,
+        l2_reg,
+        l2_square_reg,
+        unimodality,
+        normalize,
+        simplex,
+        normalized_sparsity,
+        soft_sparsity,
+        smoothness,
+        monotonicity,
+        hard_sparsity,
+    ]
+
+    # Checking that no mode is constrained twice
+    modes_constrained = set()
+    for each_constraint in constraints_list:
+        if each_constraint:
+            if isinstance(each_constraint, dict):
+                for mode in each_constraint:
+                    if mode in modes_constrained:
+                        raise ValueError(
+                            "You selected two constraints for the same mode. Consider to check your input"
+                        )
+                    modes_constrained.add(mode)
+            elif isinstance(each_constraint, list):
+                for mode in range(len(each_constraint)):
+                    if each_constraint[mode]:
+                        if mode in modes_constrained:
+                            raise ValueError(
+                                "You selected two constraints for the same mode. Consider to check your input"
+                            )
+                        modes_constrained.add(mode)
+            else:  # each_constraint is a float or int applied to all modes
+                if len(modes_constrained) > 0:
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                for i in range(n_const):
+                    modes_constrained.add(i)
+
+
+def get_constraint(
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+    n_const=1,
     order=0,
 ):
     """
-    Validates input constraints for constrained parafac decomposition and returns a constraint and a parameter for
-    proximal operator.
+    Returns a constraint and a parameter for the proximal operator.
 
     Parameters
     ----------
@@ -96,33 +192,6 @@ def validate_constraints(
         "monotonicity",
         "hard_sparsity",
     ]
-
-    # Checking that no mode is constrained twice
-    modes_constrained = set()
-    for each_constraint in constraints_list:
-        if each_constraint:
-            if isinstance(each_constraint, dict):
-                for mode in each_constraint:
-                    if mode in modes_constrained:
-                        raise ValueError(
-                            "You selected two constraints for the same mode. Consider to check your input"
-                        )
-                    modes_constrained.add(mode)
-            elif isinstance(each_constraint, list):
-                for mode in range(len(each_constraint)):
-                    if each_constraint[mode]:
-                        if mode in modes_constrained:
-                            raise ValueError(
-                                "You selected two constraints for the same mode. Consider to check your input"
-                            )
-                        modes_constrained.add(mode)
-            else:  # each_constraint is a float or int applied to all modes
-                if len(modes_constrained) > 0:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                for i in range(n_const):
-                    modes_constrained.add(i)
 
     def registrer_constraint(list_or_dict_or_float, name_constraint):
         if isinstance(list_or_dict_or_float, dict):
@@ -221,7 +290,7 @@ def proximal_operator(
     """
     if n_const is None:
         return tensor
-    constraint, parameter = validate_constraints(
+    constraint, parameter = get_constraint(
         non_negative=non_negative,
         l1_reg=l1_reg,
         l2_reg=l2_reg,
