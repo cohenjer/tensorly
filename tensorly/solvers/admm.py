@@ -23,6 +23,7 @@ def admm(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
     tol=1e-4,
 ):
     """
@@ -81,6 +82,8 @@ def admm(
         Hard thresholding with the given threshold
     hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     tol : float
 
     Returns
@@ -142,6 +145,7 @@ def admm(
             monotonicity=monotonicity,
             hard_sparsity=hard_sparsity,
             hard_sparsity_columnwise=hard_sparsity_columnwise,
+            hard_sparsity_rowwise=hard_sparsity_rowwise,
             n_const=n_const,
             order=order,
         )

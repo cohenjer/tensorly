@@ -38,6 +38,7 @@ def initialize_constrained_parafac(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
 ):
     r"""Initialize factors used in `constrained_parafac`.
 
@@ -92,6 +93,8 @@ def initialize_constrained_parafac(
         Hard thresholding with the given threshold
     hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     Returns
     -------
     factors : CPTensor
@@ -160,6 +163,7 @@ def initialize_constrained_parafac(
             monotonicity=monotonicity,
             hard_sparsity=hard_sparsity,
             hard_sparsity_columnwise=hard_sparsity_columnwise,
+            hard_sparsity_rowwise=hard_sparsity_rowwise,
             n_const=n_modes,
             order=i,
         )
@@ -194,6 +198,7 @@ def constrained_parafac(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
 ):
     """CANDECOMP/PARAFAC decomposition via alternating optimization of
     alternating direction method of multipliers (AO-ADMM):
@@ -263,6 +268,8 @@ def constrained_parafac(
         Hard thresholding with the given threshold
     hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
        Stopping criterion if `tol` is not None.
        If 'rec_error',  algorithm stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
@@ -302,6 +309,7 @@ def constrained_parafac(
         monotonicity=monotonicity,
         hard_sparsity=hard_sparsity,
         hard_sparsity_columnwise=hard_sparsity_columnwise,
+        hard_sparsity_rowwise=hard_sparsity_rowwise,
         n_const=tl.ndim(tensor),
     )
 
@@ -324,6 +332,7 @@ def constrained_parafac(
         monotonicity=monotonicity,
         hard_sparsity=hard_sparsity,
         hard_sparsity_columnwise=hard_sparsity_columnwise,
+        hard_sparsity_rowwise=hard_sparsity_rowwise,
     )
 
     rec_errors = []
@@ -384,6 +393,7 @@ def constrained_parafac(
                 monotonicity=monotonicity,
                 hard_sparsity=hard_sparsity,
                 hard_sparsity_columnwise=hard_sparsity_columnwise,
+                hard_sparsity_rowwise=hard_sparsity_rowwise,
                 tol=tol_inner,
             )
 
@@ -502,6 +512,8 @@ class ConstrainedCP(DecompositionMixin):
         Hard thresholding with the given threshold
     hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
        Stopping criterion if `tol` is not None.
        If 'rec_error',  algorithm stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
@@ -554,6 +566,7 @@ class ConstrainedCP(DecompositionMixin):
         monotonicity=None,
         hard_sparsity=None,
         hard_sparsity_columnwise=None,
+        hard_sparsity_rowwise=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -580,6 +593,7 @@ class ConstrainedCP(DecompositionMixin):
         self.monotonicity = monotonicity
         self.hard_sparsity = hard_sparsity
         self.hard_sparsity_columnwise = hard_sparsity_columnwise
+        self.hard_sparsity_rowwise = hard_sparsity_rowwise
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -620,6 +634,7 @@ class ConstrainedCP(DecompositionMixin):
             monotonicity=self.monotonicity,
             hard_sparsity=self.hard_sparsity,
             hard_sparsity_columnwise=self.hard_sparsity_columnwise,
+            hard_sparsity_rowwise=self.hard_sparsity_rowwise,
             return_errors=True,
         )
         self.decomposition_ = cp_tensor

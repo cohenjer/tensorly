@@ -15,6 +15,7 @@ def validate_constraints(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
     n_const=1,
 ):
     """
@@ -54,6 +55,8 @@ def validate_constraints(
         Hard thresholding with the given threshold
     hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     n_const : int
         Number of constraints. If it is None, function returns input tensor.
         Default : 1
@@ -72,6 +75,7 @@ def validate_constraints(
         monotonicity,
         hard_sparsity,
         hard_sparsity_columnwise,
+        hard_sparsity_rowwise,
     ]
 
     # Checking that no mode is constrained twice
@@ -116,6 +120,7 @@ def get_constraint(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
     n_const=1,
     order=0,
 ):
@@ -154,6 +159,10 @@ def get_constraint(
         If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
         Hard thresholding with the given threshold
+    hard_sparsity_columnwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     n_const : int
         Number of constraints. If it is None, function returns input tensor.
         Default : 1
@@ -182,6 +191,7 @@ def get_constraint(
         monotonicity,
         hard_sparsity,
         hard_sparsity_columnwise,
+        hard_sparsity_rowwise,
     ]
 
     constraints_names = [
@@ -198,6 +208,7 @@ def get_constraint(
         "monotonicity",
         "hard_sparsity",
         "hard_sparsity_columnwise",
+        "hard_sparsity_rowwise",
     ]
 
     def registrer_constraint(list_or_dict_or_float, name_constraint):
@@ -236,6 +247,7 @@ def proximal_operator(
     monotonicity=None,
     hard_sparsity=None,
     hard_sparsity_columnwise=None,
+    hard_sparsity_rowwise=None,
     n_const=1,
     order=0,
 ):
@@ -278,8 +290,10 @@ def proximal_operator(
         If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
         Hard thresholding with the given threshold
-    hard_sparsity : float or list or dictionary, optional
+    hard_sparsity_columnwise : float or list or dictionary, optional
         Hard thresholding with the given threshold, applied columnwise on factor matrices.
+    hard_sparsity_rowwise : float or list or dictionary, optional
+        Hard thresholding with the given threshold, applied rowwise on factor matrices.
     n_const : int
         Number of constraints. If it is None, function returns input tensor.
         Default : 1
@@ -314,6 +328,7 @@ def proximal_operator(
         monotonicity=monotonicity,
         hard_sparsity=hard_sparsity,
         hard_sparsity_columnwise=hard_sparsity_columnwise,
+        hard_sparsity_rowwise=hard_sparsity_rowwise,
         n_const=n_const,
         order=order,
     )
@@ -345,6 +360,8 @@ def proximal_operator(
         return hard_thresholding(tensor, parameter)
     elif constraint == "hard_sparsity_columnwise":
         return hard_thresholding_columnwise(tensor, parameter)
+    elif constraint == "hard_sparsity_rowwise":
+        return hard_thresholding_rowwise(tensor, parameter)
 
 
 def smoothness_prox(tensor, regularizer):
@@ -726,12 +743,44 @@ def hard_thresholding_columnwise(tensor, number_of_non_zero):
     tensor_mat = tl.copy(tl.unfold(tensor, mode=0))
     # argsort twice gives inplace ranking of elements in an array
     sorted_indices = tl.argsort(tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0)
-    return tl.reshape(
+    return tl.fold(
         tl.where(
             sorted_indices < number_of_non_zero,
             tensor_mat,
             tl.tensor(0, **tl.context(tensor_mat)),
         ),
+        0,
+        tensor.shape,
+    )
+
+
+def hard_thresholding_rowwise(tensor, number_of_non_zero):
+    """
+    Proximal operator of the l0 ``norm''
+    Keeps greater "number_of_non_zero" elements untouched and sets other elements to zero.
+    Operates on the fibers along the last mode (rows).
+
+    Parameters
+    ----------
+    tensor : ndarray
+    number_of_non_zero : int
+
+    Returns
+    -------
+    ndarray
+          Thresholded tensor on which the operator has been applied
+    """
+    lmode = tensor.ndim - 1
+    tensor_mat = tl.copy(tl.unfold(tensor, mode=lmode))
+    # argsort twice gives inplace ranking of elements in an array
+    sorted_indices = tl.argsort(tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0)
+    return tl.fold(
+        tl.where(
+            sorted_indices < number_of_non_zero,
+            tensor_mat,
+            tl.tensor(0, **tl.context(tensor_mat)),
+        ),
+        lmode,
         tensor.shape,
     )
 
