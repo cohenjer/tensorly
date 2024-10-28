@@ -724,6 +724,7 @@ def hard_thresholding(tensor, number_of_non_zero):
         tensor.shape,
     )
 
+
 def hard_thresholding_columnwise(tensor, number_of_non_zero):
     """
     Proximal operator of the l0 ``norm''
@@ -742,7 +743,9 @@ def hard_thresholding_columnwise(tensor, number_of_non_zero):
     """
     tensor_mat = tl.copy(tl.unfold(tensor, mode=0))
     # argsort twice gives inplace ranking of elements in an array
-    sorted_indices = tl.argsort(tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0)
+    sorted_indices = tl.argsort(
+        tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0
+    )
     return tl.fold(
         tl.where(
             sorted_indices < number_of_non_zero,
@@ -773,7 +776,9 @@ def hard_thresholding_rowwise(tensor, number_of_non_zero):
     lmode = tensor.ndim - 1
     tensor_mat = tl.copy(tl.unfold(tensor, mode=lmode))
     # argsort twice gives inplace ranking of elements in an array
-    sorted_indices = tl.argsort(tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0)
+    sorted_indices = tl.argsort(
+        tl.flip(tl.argsort(tl.abs(tensor_mat), axis=0), axis=0), axis=0
+    )
     return tl.fold(
         tl.where(
             sorted_indices < number_of_non_zero,

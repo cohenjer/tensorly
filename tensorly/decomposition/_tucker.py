@@ -732,10 +732,9 @@ def non_negative_tucker_hals(
                 nn_factor = tl.solve(
                     UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]), Mut
                 )
-                
+
             nn_factors[mode] = tl.transpose(nn_factor)
 
-        
         # updating core
         pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
         core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
