@@ -29,6 +29,8 @@ def hals_nnls(
     outer-loop alternating algorithm, for instance for computing nonnegative
     matrix Factorization or tensor factorization. To use as a stand-alone solver, set the exact flag to True.
 
+    If an initial value for V is provided, it is modified inplace.
+
     Parameters
     ----------
     UtM: r-by-n array
@@ -86,7 +88,7 @@ def hals_nnls(
 
     .. math::
 
-            \\min_{V >= \epsilon} ||M-UV||_F^2
+            \\min_{V >= \\epsilon} \\frac{1}{2}\\|M-UV\\|_F^2 + ridge\\_coefficient \\|V\\|_2^2 + sparsity\\_coefficient \\|V\\|_1
 
     The matrix V is updated linewise. The update rule for this resolution is
 
@@ -100,14 +102,14 @@ def hals_nnls(
 
     This problem can also be defined by adding respectively a sparsity coefficient and a ridge coefficients
 
-    .. math:: \lambda_s, \lambda_r
+    .. math:: \\lambda_s, \\lambda_r
 
     enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes
 
     .. math::
 
             \\begin{equation}
-                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \lambda_s)/(UtU[k,k]+2\lambda_r)
+                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \\lambda_s)/(UtU[k,k]+2\\lambda_r)
             \\end{equation}
 
     Note that the data fitting is halved but not the ridge penalization.

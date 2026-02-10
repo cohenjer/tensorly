@@ -154,9 +154,18 @@ time_tuned = time.time()-tic
 # First comparison option is processing time, then reconstruction error
 # for each algorithm:
 
-print(str("{:.2f}".format(time_mu)) + ' ' + 'seconds')
-print(str("{:.2f}".format(time_hals)) + ' ' + 'seconds')
-print(str("{:.2f}".format(time_tuned)) + ' ' + 'seconds')
+print(str(f"{time_mu:.2f}") + " " + "seconds")
+print(str(f"{time_hals:.2f}") + " " + "seconds")
+print(str(f"{time_exact_hals:.2f}") + " " + "seconds")
+
+##############################################################################
+# As it is expected, the exact solution takes much longer than the approximate
+# solution, while the gain in performance is often void. Therefore we recommend
+# to avoid this option unless it is specifically required by the application.
+# Also note that on appearance, both MU and HALS have similar runtimes.
+# However, a closer look suggest they are indeed behaving quite differently.
+# Computing the error between the output and the input tensor tells that story better.
+# In Tensorly, we provide a function to calculate Root Mean Square Error (RMSE):
 
 from tensorly.metrics.regression import RMSE
 
