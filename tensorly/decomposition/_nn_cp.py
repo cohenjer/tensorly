@@ -383,13 +383,6 @@ def non_negative_parafac_hals(
         # Note: not in the returned errors
         cp_tensor = CPTensor((weights, factors))
         unnorml_rec_error = tl.norm(tensor - cp_tensor.to_tensor(), 2)
-        #fit_loss = (1 / 2) * (tl.norm(tensor - cp_tensor.to_tensor()) ** 2)
-        #regs_loss = sum(
-        #    sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
-        #    + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
-        #    for i in range(n_modes)
-        #)
-        #callback_error = (fit_loss + regs_loss) / norm_tensor  # loss !
         callback(cp_tensor, unnorml_rec_error)
 
     # initialisation - declare local variables
@@ -429,12 +422,9 @@ def non_negative_parafac_hals(
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
-                if sparsity_coefficients[mode]:
-                    warnings.warn(
-                        f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity."
-                    )
                 factor = tl.solve(
-                    pseudo_inverse + 2 * ridge_coefficients[mode] * tl.eye(rank),
+                    tl.transpose(pseudo_inverse)
+                    + 2 * ridge_coefficients[mode] * tl.eye(rank),
                     tl.transpose(mttkrp),
                 )
                 factors[mode] = tl.transpose(factor)
