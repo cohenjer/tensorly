@@ -387,7 +387,6 @@ def non_negative_parafac_hals(
 
     # initialisation - declare local variables
     rec_errors = []
-    regs_loss = []
 
     # Iteration
     for iteration in range(n_iter_max):
@@ -442,16 +441,6 @@ def non_negative_parafac_hals(
 
         if tol or verbose or (callback is not None):
             unnorml_rec_error = tl.sqrt(norm_tensor + factors_norm**2 - 2 * iprod)
-            #regs_loss.append(
-                #sum(
-                    #[
-                        #sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
-                        #+ ridge_coefficients[i] * tl.norm(factors[i]) ** 2
-                        #for i in range(n_modes)
-                    #]
-                #)
-            #)
-            #rec_errors.append((rec_error + regs_loss[-1]) / norm_tensor)  # loss !
             rec_errors.append(unnorml_rec_error)
 
             if callback is not None:
@@ -468,7 +457,7 @@ def non_negative_parafac_hals(
             if verbose and not (iteration % print_it):
                 if iteration >= 1:
                     print(
-                        f"iteration {iteration}, norm. loss: {rec_errors[-1]}, rec error: {rec_error}, regs: {regs_loss[-1]}, decrease = {rec_error_decrease}"
+                        f"iteration {iteration}, rec error: {rec_errors[-1]}, decrease = {rec_error_decrease}"
                     )
                 else:
                     print(f"first iteration, initial loss={rec_errors[-1]}.")
@@ -483,7 +472,7 @@ def non_negative_parafac_hals(
     # final print
     if verbose:
         print(
-            f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, regs={tl.sum(regs)}."
+            f"iter={iteration}, rec error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
         )
 
     cp_tensor = CPTensor((weights, factors))
